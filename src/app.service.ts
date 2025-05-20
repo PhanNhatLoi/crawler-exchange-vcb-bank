@@ -27,13 +27,13 @@ export class AppService {
 
     const exchange = await page.evaluate(() => {
       const currencyUnit =
-        document.querySelector('div.donvi')?.textContent?.trim() || ''; //done
+        document.querySelector('div.donvi')?.textContent?.trim() || '';
 
       const source =
-        document.querySelector('div.source')?.textContent?.trim() || ''; //done
+        document.querySelector('div.source')?.textContent?.trim() || '';
 
       const updatedDate =
-        document.querySelector('h1.h-head')?.textContent?.trim() || ''; //done
+        document.querySelector('h1.h-head')?.textContent?.trim() || '';
 
       const rows = document.querySelectorAll('table.table-exchanges tbody tr');
       const result: any[] = [];
@@ -43,31 +43,17 @@ export class AppService {
         if (cells.length < 5) return;
 
         const iconSpan = cells[0].querySelector('span.cur-icon');
-        const currencyCode =
-          (iconSpan?.className || '').split('ci-')?.[1] || '';
+        const countryCode =
+          (iconSpan?.className || '').split('ci-')?.[1]?.slice(0, 2) || '';
 
-        const currencyToCountry = {
-          usd: 'us',
-          vnd: 'vn',
-          eur: 'eu',
-          jpy: 'jp',
-          gbp: 'gb',
-          aud: 'au',
-          cad: 'ca',
-          chf: 'ch',
-          cny: 'cn',
-        };
-
-        const countryCode = currencyToCountry[currencyCode] || currencyCode; //done
         const currencyNote =
-          cells[0]?.textContent?.trim().replace(/[()]/g, '') || ''; //done
-        const currencyName = cells[1]?.textContent?.trim() || ''; // done
-        const buyCash = cells[2]?.textContent?.trim() || ''; //done
-        const buyTransfer = cells[3]?.textContent?.trim() || ''; //done
-        const sellCash = cells[4]?.textContent?.trim() || ''; //done
+          cells[0]?.textContent?.trim().replace(/[()]/g, '') || '';
+        const currencyName = cells[1]?.textContent?.trim() || '';
+        const buyCash = cells[2]?.textContent?.trim() || '';
+        const buyTransfer = cells[3]?.textContent?.trim() || '';
+        const sellCash = cells[4]?.textContent?.trim() || '';
 
         result.push({
-          currencyCode,
           countryCode,
           currencyNote,
           currencyName,
@@ -77,7 +63,59 @@ export class AppService {
         });
       });
 
-      return { currencyUnit, result, source, updatedDate };
+      const sidebar = document.querySelector('#sidebar');
+      const sections = sidebar?.querySelectorAll('table');
+
+      let gold = null;
+      let oil = [];
+      let petrol = [];
+
+      sections?.forEach((section) => {
+        const label =
+          section.querySelector('a')?.textContent?.toLowerCase() || '';
+
+        if (label.includes('giá vàng thế giới')) {
+          const row = section.querySelector('tbody tr');
+          const cols = row?.querySelectorAll('td');
+          if (cols?.length >= 3) {
+            gold = {
+              price: cols[0]?.textContent?.trim() || '',
+              change: cols[1]?.textContent?.trim() || '',
+              percentChange: cols[2]?.textContent?.trim() || '',
+            };
+          }
+        }
+
+        // Dầu thô
+        if (label.includes('giá dầu thô')) {
+          const rows = section.querySelectorAll('tbody tr');
+          rows.forEach((row) => {
+            const cols = row.querySelectorAll('td');
+            oil.push({
+              type: cols[0]?.textContent?.trim(),
+              price: cols[1]?.textContent?.trim(),
+              change: cols[2]?.textContent?.trim(),
+              percentChange: cols[3]?.textContent?.trim(),
+            });
+          });
+        }
+
+        // Xăng dầu
+        if (label.includes('giá bán lẻ xăng dầu')) {
+          const rows = section.querySelectorAll('tbody tr');
+          rows.forEach((row, idx) => {
+            if (idx === 0) return;
+            const cols = row.querySelectorAll('td, th');
+            petrol.push({
+              product: cols[0]?.textContent?.trim(),
+              region1: cols[1]?.textContent?.trim(),
+              region2: cols[2]?.textContent?.trim(),
+            });
+          });
+        }
+      });
+
+      return { currencyUnit, result, source, updatedDate, gold, oil, petrol };
     });
 
     await browser.close();
