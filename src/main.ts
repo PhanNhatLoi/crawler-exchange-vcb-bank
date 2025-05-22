@@ -8,7 +8,13 @@ import { join } from 'path';
 async function bootstrap() {
   const logger = new Logger(bootstrap.name);
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.enableCors();
+  app.enableCors({
+    origin: [
+      'https://hs-globallogistic.com/',
+      'https://hs-globallogistics.com/',
+      'http://localhost:4000/',
+    ],
+  });
 
   const config_service = app.get(ConfigService);
   app.useStaticAssets(join(__dirname, './served'));
