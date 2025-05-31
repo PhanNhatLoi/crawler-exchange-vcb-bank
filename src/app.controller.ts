@@ -12,6 +12,6 @@ export class AppController {
 
   @Get('crawler')
   async crawl() {
-    return await this.appService.crawlWebsite();
+    return await this.appService.crawlMultipleWebsites();
   }
 }

@@ -10,10 +10,13 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.enableCors({
     origin: [
+      'http://localhost:4000',
       'https://hs-globallogistic.com/',
       'https://hs-globallogistics.com/',
-      'http://localhost:4000/',
     ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+    allowedHeaders: 'Content-Type, Authorization',
   });
 
   const config_service = app.get(ConfigService);
