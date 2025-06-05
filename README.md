@@ -1,3 +1,46 @@
+# 🕷️ crawler-exchange-vcb-bank
+
+A **NestJS + Puppeteer** crawler project to fetch:
+
+- 🪙 Gold exchange rates  
+- 🛢️ Crude oil and gasoline prices  
+- 💱 Currency exchange rates  
+
+from the [Vietcombank official website](https://www.vietcombank.com.vn).
+
+---
+
+## ⚙️ Technologies Used
+
+- [NestJS](https://nestjs.com/) — Scalable backend framework
+- [Puppeteer](https://pptr.dev/) — Headless browser automation
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-username/crawler-exchange-vcb-bank.git
+cd crawler-exchange-vcb-bank
+```
+2. Install dependencies
+```bash
+npm install
+# or
+yarn
+```
+3. Install Puppeteer and Chromium
+Puppeteer automatically downloads a compatible version of Chromium when you install it. However, you can also configure it explicitly.
+
+```bash
+npm install puppeteer
+# or
+yarn add puppeteer
+```
+Note: This will download a recent version of Chromium (~300MB). If you're deploying in a headless environment (e.g., Docker or Linux server), consider installing additional system dependencies like libx11, libxss1, or using puppeteer-core with a custom browser.
+
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
