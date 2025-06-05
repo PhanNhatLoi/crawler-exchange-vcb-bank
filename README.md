@@ -22,7 +22,7 @@ from the [Vietcombank official website](https://www.vietcombank.com.vn).
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/crawler-exchange-vcb-bank.git
+git clone https://github.com/PhanNhatLoi/crawler-exchange-vcb-bank.git
 cd crawler-exchange-vcb-bank
 ```
 2. Install dependencies
