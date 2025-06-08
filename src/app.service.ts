@@ -67,14 +67,23 @@ export class AppService {
         ? exrateList.Exrate
         : [exrateList.Exrate];
 
-      const result = exrates.map((item) => ({
-        countryCode: item.CurrencyCode?.slice(0, 2)?.toLowerCase(),
-        currencyNote: item.CurrencyCode,
-        currencyName: item.CurrencyName,
-        buyCash: item.Buy,
-        buyTransfer: item.Transfer,
-        sellCash: item.Sell,
-      }));
+      const result = exrates
+        .map((item) => ({
+          countryCode: item.CurrencyCode?.slice(0, 2)?.toLowerCase(),
+          currencyNote: item.CurrencyCode,
+          currencyName: item.CurrencyName,
+          buyCash: item.Buy,
+          buyTransfer: item.Transfer,
+          sellCash: item.Sell,
+        }))
+        .concat({
+          countryCode: 'vn',
+          currencyNote: 'VND',
+          currencyName: 'Vietnamese Dong',
+          buyCash: '1.00',
+          buyTransfer: '1.00',
+          sellCash: '1.00',
+        });
 
       return {
         updatedDate,
