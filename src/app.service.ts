@@ -1,30 +1,46 @@
 import { Injectable } from '@nestjs/common';
-import puppeteer, { Page } from 'puppeteer';
+import puppeteer from 'puppeteer';
 import axios from 'axios';
 import { XMLParser } from 'fast-xml-parser';
 
 @Injectable()
 export class AppService {
+  private async launchBrowser() {
+    const commonArgs = [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-blink-features=AutomationControlled',
+      '--disable-infobars',
+      '--window-size=1920,1080',
+    ];
+
+    if (process.env.VERCEL) {
+      const chromium = (await import('@sparticuz/chromium')).default;
+      const puppeteerCore = await import('puppeteer-core');
+
+      return puppeteerCore.default.launch({
+        args: [...chromium.args, ...commonArgs],
+        executablePath: await chromium.executablePath(),
+        headless: true,
+      });
+    }
+
+    return puppeteer.launch({
+      headless: 'shell',
+      args: commonArgs,
+    });
+  }
+
   getHello(): string {
     return 'Hello World!';
   }
 
   async crawlMultipleWebsites() {
-    const browser = await puppeteer.launch({
-      headless: 'shell',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-blink-features=AutomationControlled',
-        '--disable-infobars',
-        '--start-maximized',
-        '--window-size=1920,1080',
-      ],
-    });
+    const browser = await this.launchBrowser();
 
     try {
-      const [otherDataPage] = await browser.pages();
+      const [otherDataPage] = (await browser.pages()) as any[];
       const [exchangeData, otherData] = await Promise.all([
         this.crawlExchangeRate(),
         this.crawlOtherData(otherDataPage),
@@ -98,7 +114,7 @@ export class AppService {
     }
   }
 
-  private async crawlOtherData(page: Page) {
+  private async crawlOtherData(page: any) {
     await page.goto('https://webgia.com/ty-gia/vietcombank/', {
       waitUntil: 'networkidle2',
     });
@@ -167,19 +183,8 @@ export class AppService {
   }
 
   async crawlWebsite() {
-    const browser = await puppeteer.launch({
-      headless: 'shell',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-blink-features=AutomationControlled',
-        '--disable-infobars',
-        '--start-maximized',
-        '--window-size=1920,1080',
-      ],
-    });
-    const page = await browser.newPage();
+    const browser = await this.launchBrowser();
+    const page: any = await browser.newPage();
     await page.goto('https://webgia.com/ty-gia/vietcombank/', {
       waitUntil: 'networkidle2',
     });
