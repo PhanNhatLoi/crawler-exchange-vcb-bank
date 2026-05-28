@@ -14,4 +14,29 @@ export class AppController {
   async crawl() {
     return await this.appService.crawlMultipleWebsites();
   }
+
+  @Get('crawler/exchange-rate')
+  async crawlExchangeRate() {
+    return await this.appService.crawlExchangeRate();
+  }
+
+  @Get('crawler/market')
+  async crawlMarket() {
+    return await this.appService.crawlMarketData();
+  }
+
+  @Get('crawler/gold')
+  async crawlGold() {
+    return await this.appService.crawlGoldPrice();
+  }
+
+  @Get('crawler/oil')
+  async crawlOil() {
+    return await this.appService.crawlOilPrice();
+  }
+
+  @Get('crawler/petrol')
+  async crawlPetrol() {
+    return await this.appService.crawlPetrolPrice();
+  }
 }

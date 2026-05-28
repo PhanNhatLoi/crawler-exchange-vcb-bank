@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { join } from 'path';
 
 async function bootstrap() {
@@ -22,6 +23,15 @@ async function bootstrap() {
   const config_service = app.get(ConfigService);
   app.useStaticAssets(join(__dirname, './served'));
   app.setGlobalPrefix('/api/v1');
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Crawler Exchange API')
+    .setDescription('API documentation for crawler exchange service')
+    .setVersion('1.0')
+    .build();
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, swaggerDocument);
+
   await app.listen(config_service.get('PORT'), () =>
     logger.log(`Application running on port ${config_service.get('PORT')}`),
   );

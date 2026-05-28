@@ -37,27 +37,90 @@ export class AppService {
   }
 
   async crawlMultipleWebsites() {
-    const browser = await this.launchBrowser();
+    let browser: any;
 
     try {
-      const [otherDataPage] = (await browser.pages()) as any[];
+      browser = await this.launchBrowser();
+      const otherDataPage = await browser.newPage();
       const [exchangeData, otherData] = await Promise.all([
         this.crawlExchangeRate(),
         this.crawlOtherData(otherDataPage),
       ]);
 
-      await browser.close();
       return {
         status: 'success',
         exchange: { ...otherData, ...exchangeData },
       };
-    } catch (error) {
-      await browser.close();
+    } catch (error: any) {
       return {
         status: 'error',
-        message: error.message,
+        message: error?.message || 'Unknown crawler error',
       };
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
     }
+  }
+
+  async crawlMarketData() {
+    let browser: any;
+
+    try {
+      browser = await this.launchBrowser();
+      const page = await browser.newPage();
+      const data = await this.crawlOtherData(page);
+
+      return {
+        status: 'success',
+        data,
+      };
+    } catch (error: any) {
+      return {
+        status: 'error',
+        message: error?.message || 'Unknown crawler error',
+      };
+    } finally {
+      if (browser) {
+        await browser.close();
+      }
+    }
+  }
+
+  async crawlGoldPrice() {
+    const marketData = await this.crawlMarketData();
+    if (marketData.status === 'error') return marketData;
+
+    return {
+      status: 'success',
+      gold: marketData.data.gold,
+      updatedDate: marketData.data.updatedDate,
+      currencyUnit: marketData.data.currencyUnit,
+    };
+  }
+
+  async crawlOilPrice() {
+    const marketData = await this.crawlMarketData();
+    if (marketData.status === 'error') return marketData;
+
+    return {
+      status: 'success',
+      oil: marketData.data.oil,
+      updatedDate: marketData.data.updatedDate,
+      currencyUnit: marketData.data.currencyUnit,
+    };
+  }
+
+  async crawlPetrolPrice() {
+    const marketData = await this.crawlMarketData();
+    if (marketData.status === 'error') return marketData;
+
+    return {
+      status: 'success',
+      petrol: marketData.data.petrol,
+      updatedDate: marketData.data.updatedDate,
+      currencyUnit: marketData.data.currencyUnit,
+    };
   }
 
   async crawlExchangeRate() {

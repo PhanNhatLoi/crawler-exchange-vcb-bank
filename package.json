@@ -20,19 +20,20 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@sparticuz/chromium": "^138.0.2",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
-    "@vendia/serverless-express": "^4.12.6",
+    "@nestjs/swagger": "^7.4.2",
+    "@sparticuz/chromium": "^138.0.2",
     "axios": "^1.9.0",
     "express": "^4.21.2",
     "fast-xml-parser": "^5.2.3",
     "puppeteer": "^24.8.2",
     "puppeteer-core": "^24.8.2",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
