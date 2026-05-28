@@ -10,11 +10,7 @@ async function bootstrap() {
   const logger = new Logger(bootstrap.name);
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.enableCors({
-    origin: [
-      'http://localhost:4000',
-      'https://hs-globallogistic.com/',
-      'https://hs-globallogistics.com/',
-    ],
+    origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
     allowedHeaders: 'Content-Type, Authorization',
@@ -30,7 +26,17 @@ async function bootstrap() {
     .setVersion('1.0')
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, swaggerDocument);
+  SwaggerModule.setup('docs', app, swaggerDocument, {
+    jsonDocumentUrl: 'docs-json',
+    customCssUrl: 'https://unpkg.com/swagger-ui-dist/swagger-ui.css',
+    customJs: [
+      'https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js',
+      'https://unpkg.com/swagger-ui-dist/swagger-ui-standalone-preset.js',
+    ],
+    swaggerOptions: {
+      url: '/docs-json',
+    },
+  });
 
   await app.listen(config_service.get('PORT'), () =>
     logger.log(`Application running on port ${config_service.get('PORT')}`),
