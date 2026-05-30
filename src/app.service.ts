@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import puppeteer from 'puppeteer';
+import chromium from '@sparticuz/chromium';
+import puppeteerCore from 'puppeteer-core';
 import axios from 'axios';
 import { XMLParser } from 'fast-xml-parser';
 
@@ -16,10 +18,7 @@ export class AppService {
     ];
 
     if (process.env.VERCEL) {
-      const chromium = (await import('@sparticuz/chromium')).default;
-      const puppeteerCore = await import('puppeteer-core');
-
-      return puppeteerCore.default.launch({
+      return puppeteerCore.launch({
         args: [...chromium.args, ...commonArgs],
         executablePath: await chromium.executablePath(),
         headless: true,
