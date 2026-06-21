@@ -38,8 +38,11 @@ async function bootstrap() {
     },
   });
 
-  await app.listen(config_service.get('PORT'), () =>
-    logger.log(`Application running on port ${config_service.get('PORT')}`),
+  const port = config_service.get<number>('PORT') || 3000;
+  const host = config_service.get<string>('HOST') || '0.0.0.0';
+
+  await app.listen(port, host, () =>
+    logger.log(`Application running on http://${host}:${port}`),
   );
 }
 bootstrap();

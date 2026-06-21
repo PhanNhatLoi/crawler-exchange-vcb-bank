@@ -1,4 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
+import { Controller, Get, UseInterceptors } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller()
@@ -11,6 +12,8 @@ export class AppController {
   }
 
   @Get('crawler')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(60000)
   async crawl() {
     return await this.appService.crawlMultipleWebsites();
   }
