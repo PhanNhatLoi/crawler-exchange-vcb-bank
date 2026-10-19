@@ -90,6 +90,87 @@ $ yarn run start:prod
 
 ## Run tests
 
+### Google Maps crawler
+
+The selection flow uses two APIs:
+
+```bash
+# 1. Search by address or business name; results is always an array.
+curl --get 'http://localhost:3000/api/v1/crawler/maps/search' \
+  --data-urlencode 'query=Phở Khô Gia Lai Hồ Chí Minh' \
+  --data-urlencode 'limit=5'
+
+# 2. Pass googleMapsUrl from the selected result, or a shared short link.
+curl --get 'http://localhost:3000/api/v1/crawler/maps/detail' \
+  --data-urlencode 'url=https://maps.app.goo.gl/3BCpuMso7sGQBGHJ8'
+```
+
+Search requires `query` (1–500 characters). Optional `limit` defaults to 10,
+with a maximum of 20. It returns `{ status, query, count, limit, hasMore, results,
+warning }`. Status is `success`, `empty` (no matches), or `error` (loading failed).
+Each result contains `name`, `address`, `lat`, `lng`, `googleMapsUrl`, and
+`placeId`; unavailable values are `null`. List addresses may be abbreviated;
+detail reads the full address. A plain street address can resolve to an address
+pin rather than a business at that address; the API preserves Google's result.
+
+Search reads the first loaded results and scrolls at most three times, within the
+requested limit. `count` is the number returned, not Google's total result count.
+`hasMore` indicates additional results exist or may remain unloaded; this version
+does not provide pagination. The frontend shows results and calls detail with
+the selected `googleMapsUrl`, without keeping a browser session between requests.
+
+The old endpoint below remains available as an alias for detail.
+
+`GET /api/v1/crawler/maps?url=<URL-encoded Google Maps link>` accepts full
+Google Maps place links and shared links from `maps.app.goo.gl` or `goo.gl/maps`.
+Use URL encoding so the Maps link's own `&` parameters remain inside `url`:
+
+```bash
+curl --get 'http://localhost:3000/api/v1/crawler/maps' \
+  --data-urlencode 'url=https://maps.app.goo.gl/3BCpuMso7sGQBGHJ8'
+```
+
+Example data verified against both supplied links on 2026-10-19:
+
+```json
+{
+  "status": "resolved",
+  "name": "Phở Khô 2 Tô Gia Lai",
+  "address": "82 Dương Quảng Hàm, An Nhơn, Hồ Chí Minh 700000, Việt Nam",
+  "lat": 10.8251563,
+  "lng": 106.6944692,
+  "googleMapsUrl": "https://www.google.com/maps/place/...",
+  "placeId": null,
+  "warning": null
+}
+```
+
+Statuses: `resolved` means name, address and place coordinates were read;
+`coordinates_only` means coordinates are available but place details are incomplete;
+`multiple_results` means a search returned a list without a selected place;
+`unresolved` means no reliable place coordinates were found. Missing fields are
+`null`. A loading failure returns partial data with `warning`; malformed or
+unsupported input returns HTTP 400. Plain address text and directions links are
+not supported by this endpoint.
+
+Coordinates come from the selected place's `!3d...!4d...` URL data or an explicit
+coordinate query, never the `@lat,lng` map camera position. Place IDs are returned
+only when explicitly present in the resolved URL (including `!19sChIJ...`); hex CIDs and `/g/...` IDs are
+not presented as Place IDs. Google UI changes, consent and CAPTCHA can prevent
+resolution. The Vercel browser path still needs deployment-level testing.
+
+For local Chrome, optionally set `PUPPETEER_EXECUTABLE_PATH`. Otherwise Puppeteer
+uses its downloaded browser. Build and rerun the real-browser regression check:
+
+```bash
+npm run build
+PUPPETEER_EXECUTABLE_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' node scripts/test-maps.cjs
+# Live HTTP search → detail tests and Markdown/JSON reports:
+PUPPETEER_EXECUTABLE_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' node scripts/test-maps-search.cjs
+```
+
+### Existing test commands
+
 ```bash
 # unit tests
 $ yarn run test

@@ -3,6 +3,8 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
+import { MapsController } from './maps.controller';
+import { MapsService } from './maps.service';
 
 @Module({
   imports: [
@@ -13,7 +15,7 @@ import { ConfigModule } from '@nestjs/config';
       expandVariables: true,
     }),
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, MapsController],
+  providers: [AppService, MapsService],
 })
 export class AppModule {}

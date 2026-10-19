@@ -7,7 +7,7 @@ import { XMLParser } from 'fast-xml-parser';
 
 @Injectable()
 export class AppService {
-  private async launchBrowser() {
+  async launchBrowser() {
     const commonArgs = [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -27,6 +27,7 @@ export class AppService {
 
     return puppeteer.launch({
       headless: 'shell',
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
       args: commonArgs,
     });
   }
