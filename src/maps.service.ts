@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { AppService } from './app.service';
 import type { Page } from 'puppeteer';
+import { readMapsPage } from './maps-page';
 
 export type MapsStatus =
   | 'resolved'
@@ -15,6 +16,9 @@ export interface MapsSearchItem {
   lng: number | null;
   googleMapsUrl: string;
   placeId: string | null;
+  openingTime: string | null;
+  closingTime: string | null;
+  imageUrl: string | null;
 }
 
 function decoded(value: string): string {
@@ -23,6 +27,25 @@ function decoded(value: string): string {
   } catch {
     return value;
   }
+}
+
+export function parseOpeningTimes(status: string | null) {
+  let openingTime: string = null;
+  let closingTime: string = null;
+  const readTime = (pattern: RegExp) => {
+    const match = status?.match(pattern);
+    return match ? `${match[1].padStart(2, '0')}:${match[2]}` : null;
+  };
+  if (/^đang mở cửa\b/i.test(status || '')) {
+    closingTime = readTime(
+      /đóng cửa (?:vào|lúc)\s+([01]?\d|2[0-3]):([0-5]\d)\b/i,
+    );
+  } else if (/^đã đóng cửa\b/i.test(status || '')) {
+    openingTime = readTime(
+      /mở cửa (?:vào|lúc)\s+([01]?\d|2[0-3]):([0-5]\d)\b/i,
+    );
+  }
+  return { openingTime, closingTime };
 }
 
 export function mapsUrl(input: string): URL {
@@ -136,81 +159,9 @@ export class MapsService {
           location.pathname.startsWith('/maps/place/'),
         );
       }
+      await this.waitForImages(page);
       for (let round = 0; round < 4; round++) {
-        const snapshot = await page.evaluate(() => {
-          const feed = document.querySelector('[role="feed"]');
-          const heading = document.querySelector('h1.DUwDvf');
-          const blocked =
-            !!document.querySelector(
-              '#captcha-form, iframe[src*="recaptcha"], form[action*="consent"]',
-            ) || location.hostname === 'consent.google.com';
-          const empty =
-            /không tìm thấy|không có kết quả|couldn't find|no results found/i.test(
-              document.body.innerText,
-            );
-          if (!feed && heading) {
-            const button = document.querySelector('[data-item-id="address"]');
-            return {
-              blocked,
-              empty,
-              exhausted: true,
-              items: [
-                {
-                  name: heading.textContent?.trim() || '',
-                  address:
-                    button?.querySelector('.Io6YTe')?.textContent?.trim() ||
-                    button
-                      ?.getAttribute('aria-label')
-                      ?.replace(/^(Address|Địa chỉ):\s*/i, '')
-                      .trim() ||
-                    document
-                      .querySelector(
-                        '[role="main"] [role="img"][aria-label="Địa chỉ"], [role="main"] [role="img"][aria-label="Address"]',
-                      )
-                      ?.closest('.LCF4w')
-                      ?.querySelector('.DkEaL')
-                      ?.textContent?.trim() ||
-                    null,
-                  url: location.href,
-                },
-              ],
-            };
-          }
-          const items = Array.from(
-            feed?.querySelectorAll<HTMLAnchorElement>(
-              'a[href*="/maps/place/"]',
-            ) || [],
-          ).map((link) => {
-            const card = link.closest('.Nv2PK');
-            // The first metadata row contains category and address; later rows contain hours/reviews.
-            const metadata = card?.querySelector('.W4Efsd .W4Efsd');
-            const parts = Array.from(metadata?.children || [])
-              .map((span) => span.textContent?.trim())
-              .filter(Boolean);
-            const address =
-              parts.length > 1
-                ? parts[parts.length - 1].replace(/^[·\s]+/, '')
-                : null;
-            return {
-              name:
-                link.getAttribute('aria-label')?.trim() ||
-                card?.querySelector('.qBF1Pd')?.textContent?.trim() ||
-                '',
-              address,
-              url: link.href,
-            };
-          });
-          return {
-            blocked,
-            empty,
-            items,
-            exhausted:
-              !!feed &&
-              /bạn đã xem hết|you.ve reached the end/i.test(
-                feed.textContent || '',
-              ),
-          };
-        });
+        const snapshot = await page.evaluate(readMapsPage);
         if (snapshot.blocked)
           throw new Error(
             'Google Maps requested consent or CAPTCHA verification',
@@ -222,6 +173,8 @@ export class MapsService {
           found.set(link.href, {
             name: item.name,
             address: item.address,
+            ...parseOpeningTimes(item.openingStatus),
+            imageUrl: item.imageUrl,
             lat: location?.lat ?? null,
             lng: location?.lng ?? null,
             googleMapsUrl: link.href,
@@ -277,6 +230,19 @@ export class MapsService {
     };
   }
 
+  private async waitForImages(page: Page) {
+    // Photos arrive after text. Bound the optional wait when a place has no photo.
+    await page
+      .waitForFunction(
+        () =>
+          !!document.querySelector(
+            '[role="feed"] .Nv2PK img[src*="googleusercontent.com"], [role="feed"] .Nv2PK img[src*="ggpht.com"], [role="main"] button[jsaction*="heroHeaderImage"] img[src], [role="main"] .aoRNLd img[src]',
+          ),
+        { timeout: 2000 },
+      )
+      .catch(() => undefined);
+  }
+
   private async preparePage(
     browser: Awaited<ReturnType<AppService['launchBrowser']>>,
   ) {
@@ -297,6 +263,8 @@ export class MapsService {
           host.endsWith('.google.com') ||
           host === 'maps.app.goo.gl' ||
           host === 'goo.gl' ||
+          host === 'streetviewpixels-pa.googleapis.com' ||
+          host.endsWith('.ggpht.com') ||
           host.endsWith('.gstatic.com') ||
           host.endsWith('.googleusercontent.com'));
       // Validate every top-level redirect as well as the submitted URL.
@@ -333,6 +301,8 @@ export class MapsService {
     let browser: Awaited<ReturnType<AppService['launchBrowser']>>;
     let name: string = null;
     let address: string = null;
+    let openingStatus: string = null;
+    let imageUrl: string = null;
     let multiple = false;
     let warning: string = null;
     try {
@@ -357,35 +327,14 @@ export class MapsService {
         warning = 'Place details did not load before the timeout';
       }
       finalUrl = mapsUrl(page.url());
-      const details = await page.evaluate(() => {
-        const heading = document.querySelector('h1.DUwDvf');
-        const addressButton = document.querySelector(
-          '[data-item-id="address"]',
-        );
-        return {
-          name: heading?.textContent?.trim() || null,
-          address:
-            addressButton?.querySelector('.Io6YTe')?.textContent?.trim() ||
-            addressButton
-              ?.getAttribute('aria-label')
-              ?.replace(/^(Address|Địa chỉ):\s*/i, '')
-              .trim() ||
-            document
-              .querySelector(
-                '[role="main"] [role="img"][aria-label="Địa chỉ"], [role="main"] [role="img"][aria-label="Address"]',
-              )
-              ?.closest('.LCF4w')
-              ?.querySelector('.DkEaL')
-              ?.textContent?.trim() ||
-            null,
-          multiple: !heading && !!document.querySelector('[role="feed"]'),
-          blocked: !!document.querySelector(
-            '#captcha-form, iframe[src*="recaptcha"]',
-          ),
-        };
-      });
-      name = details.name;
-      address = details.address;
+      await this.waitForImages(page);
+      const details = await page.evaluate(readMapsPage);
+      if (details.selected) {
+        name = details.detail.name;
+        address = details.detail.address;
+        openingStatus = details.detail.openingStatus;
+        imageUrl = details.detail.imageUrl;
+      }
       multiple = details.multiple;
       if (details.blocked)
         warning = 'Google Maps requested CAPTCHA verification';
@@ -407,6 +356,8 @@ export class MapsService {
       status,
       name,
       address,
+      ...parseOpeningTimes(openingStatus),
+      imageUrl,
       lat: location?.lat ?? null,
       lng: location?.lng ?? null,
       googleMapsUrl: finalUrl.href,

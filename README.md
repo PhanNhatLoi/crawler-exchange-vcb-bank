@@ -109,7 +109,7 @@ Search requires `query` (1–500 characters). Optional `limit` defaults to 10,
 with a maximum of 20. It returns `{ status, query, count, limit, hasMore, results,
 warning }`. Status is `success`, `empty` (no matches), or `error` (loading failed).
 Each result contains `name`, `address`, `lat`, `lng`, `googleMapsUrl`, and
-`placeId`; unavailable values are `null`. List addresses may be abbreviated;
+`placeId`, `openingTime`, `closingTime`, and `imageUrl`; unavailable values are `null`. List addresses may be abbreviated;
 detail reads the full address. A plain street address can resolve to an address
 pin rather than a business at that address; the API preserves Google's result.
 
@@ -118,6 +118,16 @@ requested limit. `count` is the number returned, not Google's total result count
 `hasMore` indicates additional results exist or may remain unloaded; this version
 does not provide pagination. The frontend shows results and calls detail with
 the selected `googleMapsUrl`, without keeping a browser session between requests.
+
+Search and detail return `openingTime` and `closingTime` as `HH:mm` or `null`.
+For `Đang mở cửa · Đóng cửa vào 22:00`, only `closingTime` is `"22:00"`.
+For `Đã đóng cửa · Mở cửa lúc 14:00`, only `openingTime` is `"14:00"`.
+The other time stays `null`; no schedule is inferred. They also return
+`imageUrl` (one Google-hosted place
+photo/thumbnail, or Street View if used as the hero). These fields are optional
+and return `null` when unavailable. Photos may need up to 2 seconds of additional
+loading time. Image URLs can change; the API does not store image files.
+See [Google Maps API documentation](docs/google-maps-api.md) for response fields.
 
 The old endpoint below remains available as an alias for detail.
 
